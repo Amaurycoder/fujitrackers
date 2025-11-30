@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="fr" class="antialiased">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>FujiFilm Recipes</title>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23000000'/><text x='50' y='50' font-family='Arial' font-size='60' fill='white' text-anchor='middle' dy='.35em' font-weight='bold'>F</text></svg>" />
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'media',
+            theme: {
+                extend: {
+                    colors: {
+                        fuji: {
+                            dark: '#1a1a1a',
+                            accent: '#00D678', // Fuji Green
+                            red: '#FF453A',
+                            retro: '#E4CCAA',
+                            paper: '#F2F2F7',
+                            surface: '#ffffff',
+                            'surface-dark': '#1C1C1E'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'SFMono-Regular', 'Menlo', 'monospace'],
+                    },
+                    animation: {
+                        'spring-up': 'slideUpSpring 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
+                        'fade-in': 'fadeIn 0.2s ease-out forwards',
+                        'slide-in': 'slideInRight 0.3s ease-out forwards',
+                        'pulse-fast': 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    },
+                    keyframes: {
+                        slideUpSpring: {
+                            '0%': { transform: 'translateY(100%)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' },
+                        },
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        slideInRight: {
+                            '0%': { transform: 'translateX(20px)', opacity: '0' },
+                            '100%': { transform: 'translateX(0)', opacity: '1' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+
+    <!-- Import Maps -->
+    <script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@18.2.0",
+    "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+    "lucide-react": "https://esm.sh/lucide-react@0.344.0",
+    "@google/genai": "https://esm.sh/@google/genai",
+    "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js",
+    "firebase/auth": "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js",
+    "firebase/firestore": "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js",
+    "firebase/functions": "https://www.gstatic.com/firebasejs/10.8.0/firebase-functions.js",
+    "firebase/analytics": "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js"
+  }
+}
+</script>
+
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        /* Global Reset & Texture */
+        html {
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            overscroll-behavior-y: none;
+            font-feature-settings: "cv11", "ss01";
+        }
+
+        /* Film Grain Overlay */
+        .film-grain::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0.03;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        }
+
+        /* Custom Utilities */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #ccc;
+            border-radius: 2px;
+        }
+
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #333;
+        }
+
+        .pb-safe {
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        .pt-safe {
+            padding-top: env(safe-area-inset-top);
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .ad-gradient {
+            background: linear-gradient(45deg, #f3f4f6 25%, #ffffff 25%, #ffffff 50%, #f3f4f6 50%, #f3f4f6 75%, #ffffff 75%, #ffffff 100%);
+            background-size: 20px 20px;
+        }
+
+        .dark .ad-gradient {
+            background: linear-gradient(45deg, #1f1f1f 25%, #171717 25%, #171717 50%, #1f1f1f 50%, #1f1f1f 75%, #171717 75%, #171717 100%);
+            background-size: 20px 20px;
+        }
+    </style>
+    <link rel="stylesheet" href="/index.css">
+</head>
+
+<body
+    class="bg-fuji-paper dark:bg-black text-gray-900 dark:text-gray-100 font-sans antialiased transition-colors duration-300 film-grain selection:bg-fuji-accent selection:text-white">
+    <div id="root"></div>
+
+    <!-- Error Handler -->
+    <script>
+        window.onerror = function (msg, url, lineNo, columnNo, error) {
+            const root = document.getElementById('root');
+            root.innerHTML = `
+                <div style="color: red; padding: 20px; font-family: monospace; background: #fff;">
+                    <h1>💥 Erreur JavaScript</h1>
+                    <p><strong>Message:</strong> ${msg}</p>
+                    <p><strong>Ligne:</strong> ${lineNo}</p>
+                    <pre>${error ? error.stack : ''}</pre>
+                </div>
+            `;
+            return false;
+        };
+    </script>
+
+    <script type="text/babel" data-type="module">
+        import React, { useState, useEffect, useRef, useCallback } from 'react';
+        import { createRoot } from 'react-dom/client';
+        import {
+            Heart, Edit2, Trash2, X, Check, Loader2, Sparkles, Plus,
+            Tag as TagIcon, Save, Search, BrainCircuit, Aperture, Grid,
+            Home, Download, Camera, Upload, User, Cloud, Globe,
+            AlertCircle, Flame, ChevronDown, Palette, LogIn, LogOut, Database, Settings, Share2,
+            Zap, Crown, Coins, ShieldCheck
+        } from 'lucide-react';
+
+        /* -------------------------------------------------------------------------- */
+        /*                                 DATA & TYPES                               */
+        /* -------------------------------------------------------------------------- */
+
+        const FilmSimulation = {
+            PROVIA: 'PROVIA/Standard', VELVIA: 'Velvia/Vivid', ASTIA: 'ASTIA/Soft',
+            CLASSIC_CHROME: 'Classic Chrome', PRO_NEG_HI: 'PRO Neg. Hi', PRO_NEG_STD: 'PRO Neg. Std',
+            CLASSIC_NEG: 'Classic Neg.', NOSTALGIC_NEG: 'Nostalgic Neg.', ETERNA: 'ETERNA/Cinema',
+            ETERNA_BLEACH: 'ETERNA Bleach Bypass', ACROS: 'ACROS', ACROS_YE: 'ACROS+Ye Filter',
+            ACROS_R: 'ACROS+R Filter', ACROS_G: 'ACROS+G Filter', MONOCHROME: 'Monochrome',
+            SEPIA: 'Sepia', REALA_ACE: 'REALA ACE'
+        };
+
+        const DynamicRange = { DR100: 'DR100', DR200: 'DR200', DR400: 'DR400', DR_AUTO: 'DR-P' };
+
+        const INITIAL_RECIPES = [
+            { id: '1', name: 'Kodachrome 64', type: 'Color', tags: ['Vintage', 'Sunny', 'Travel'], baseSimulation: FilmSimulation.CLASSIC_CHROME, dynamicRange: DynamicRange.DR200, highlight: 0, shadow: 0, color: 2, noiseReduction: -4, sharpening: 1, clarity: 0, grainRoughness: 'Weak', grainSize: 'Small', colorChromeEffect: 'Strong', colorChromeFXBlue: 'Weak', whiteBalance: 'Daylight', whiteBalanceShiftR: 2, whiteBalanceShiftB: -5, iso: 'Auto 6400', notes: 'Le classique absolu. Idéal en plein soleil.', isFavorite: true, cameraSlot: 1 },
+            { id: '2', name: 'Reggie\'s Portra', type: 'Color', tags: ['Portrait', 'Soft', 'Versatile'], baseSimulation: FilmSimulation.CLASSIC_CHROME, dynamicRange: DynamicRange.DR400, highlight: -1, shadow: -1, color: 0, noiseReduction: -4, sharpening: 0, clarity: 0, grainRoughness: 'Weak', grainSize: 'Small', colorChromeEffect: 'Strong', colorChromeFXBlue: 'Weak', whiteBalance: 'Auto', whiteBalanceShiftR: 0, whiteBalanceShiftB: -1, iso: 'Auto 6400', notes: 'Tons de peau naturels, légèrement chaud.', isFavorite: true, cameraSlot: 2 },
+            { id: '3', name: 'Pacific Blues', type: 'Color', tags: ['Nature', 'Cool', 'Cinematic'], baseSimulation: FilmSimulation.CLASSIC_NEG, dynamicRange: DynamicRange.DR400, highlight: -1, shadow: 0, color: 4, noiseReduction: -4, sharpening: -1, clarity: 0, grainRoughness: 'Weak', grainSize: 'Small', colorChromeEffect: 'Strong', colorChromeFXBlue: 'Strong', whiteBalance: 'Daylight', whiteBalanceShiftR: -3, whiteBalanceShiftB: 2, iso: 'Auto 3200', notes: 'Rendu incroyable pour la mer et le ciel.', isFavorite: false, cameraSlot: 3 },
+            { id: '4', name: 'CineStill 800T', type: 'Color', tags: ['Night', 'Cinematic', 'Blue Hour'], baseSimulation: FilmSimulation.ETERNA, dynamicRange: DynamicRange.DR400, highlight: -2, shadow: 0, color: -1, noiseReduction: -4, sharpening: -2, clarity: -3, grainRoughness: 'Strong', grainSize: 'Large', colorChromeEffect: 'Strong', colorChromeFXBlue: 'Weak', whiteBalance: 'Incandescent', whiteBalanceShiftR: 0, whiteBalanceShiftB: 0, iso: 'Auto 6400', notes: 'Spécial nuit et néons.', isFavorite: false, cameraSlot: null },
+        ];
+
+        /* -------------------------------------------------------------------------- */
+        /*                                  SERVICES                                  */
+        /* -------------------------------------------------------------------------- */
+
+        // --- FIREBASE INIT ---
+        import { initializeApp } from 'firebase/app';
+        import { getAnalytics } from 'firebase/analytics';
+        import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+        import { getFirestore, doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
+        import { getFunctions, httpsCallable } from 'firebase/functions';
+
+        // Config provided by user
+        const firebaseConfig = {
+            apiKey: "AIzaSyDvrtPsGBx-bXrAO-cwfIErhgf_mBFzY7w",
+            authDomain: "fujirecipe-f0c63.firebaseapp.com",
+            projectId: "fujirecipe-f0c63",
+            storageBucket: "fujirecipe-f0c63.firebasestorage.app",
+            messagingSenderId: "495870907814",
+            appId: "1:495870907814:web:15b33ebfc5d99d1c916b67",
+            measurementId: "G-ZRDQSX7TTX"
+        };
+
+        // Initialize Firebase
+        // Note: In a real deployment, these values come from /__/firebase/init.json if using Firebase Hosting
+        // For now we use a try-catch to allow local dev without crashing if config is missing
+        let app, auth, db, functions, analytics;
+        try {
+            app = initializeApp(firebaseConfig);
+            analytics = getAnalytics(app);
+            auth = getAuth(app);
+            db = getFirestore(app);
+            functions = getFunctions(app);
+
+            // Use local emulator if on localhost
+            if (window.location.hostname === 'localhost') {
+                // connectFunctionsEmulator(functions, "127.0.0.1", 5001);
+                // connectAuthEmulator(auth, "http://127.0.0.1:9099");
+                // connectFirestoreEmulator(db, '127.0.0.1', 8080);
+                console.log("Running in local mode (uncomment emulator lines if needed)");
+            }
+        } catch (e) {
+            console.error("Firebase init error:", e);
+        }
+
+        // --- TOAST SERVICE ---
+        const ToastContext = React.createContext();
+        const useToast = () => React.useContext(ToastContext);
+
+        // --- API CALLS (Firebase Functions) ---
+        const searchFujiRecipes = async (query) => {
+            if (!functions) throw new Error("Firebase non initialisé");
+            const searchRecipesFn = httpsCallable(functions, 'searchRecipes');
+            const result = await searchRecipesFn({ query });
+            return result.data.recipes || [];
+        };
+
+        const getTrendingRecipes = async () => {
+            if (!functions) throw new Error("Firebase non initialisé");
+            const getTrendingFn = httpsCallable(functions, 'getTrendingRecipes');
+            const result = await getTrendingFn({});
+            return result.data.recipes || [];
+        };
+
+        const suggestRecipeFromContext = async (context, recipes) => {
+            if (!functions) throw new Error("Firebase non initialisé");
+            const suggestRecipeFn = httpsCallable(functions, 'suggestRecipe');
+            const result = await suggestRecipeFn({ context, recipes });
+            return result.data.suggestion || 'Aucune suggestion disponible';
+        };
+
+        const createStripeSession = async (returnUrl) => {
+            if (!functions) throw new Error("Firebase non initialisé");
+            const createSessionFn = httpsCallable(functions, 'createCheckoutSession');
+            const result = await createSessionFn({ returnUrl });
+            return result.data;
+        };
+
+        /* -------------------------------------------------------------------------- */
+        /*                                COMPONENTS                                  */
+        /* -------------------------------------------------------------------------- */
+
+        // --- TOAST PROVIDER ---
+        const ToastProvider = ({ children }) => {
+            const [toasts, setToasts] = useState([]);
+            const addToast = (msg, type = 'success') => {
+                const id = Date.now();
+                setToasts(p => [...p, { id, msg, type }]);
+                setTimeout(() => setToasts(p => p.filter(t => t.id !== id)), 3000);
+            };
+            return (
+                <ToastContext.Provider value={addToast}>
+                    {children}
+                    <div className="fixed bottom-24 md:bottom-8 left-1/2 -translate-x-1/2 z-[100] flex flex-col gap-2 w-max max-w-[90vw]">
+                        {toasts.map(t => (
+                            <div key={t.id} className={`flex items-center gap-2 px-4 py-3 rounded-full shadow-xl text-sm font-medium animate-spring-up backdrop-blur-md ${t.type === 'error' ? 'bg-red-500/90 text-white' : 'bg-fuji-dark/90 text-white'}`}>
+                                {t.type === 'error' ? <AlertCircle size={16} /> : <Check size={16} />} {t.msg}
+                            </div>
+                        ))}
+                    </div>
+                </ToastContext.Provider>
+            );
+        };
+
+        // --- ADSENSE BANNER ---
+        const AdBanner = ({ isPremium }) => {
+            if (isPremium) return null;
+            return (
+                <div className="w-full bg-gray-50 dark:bg-[#161616] border-t border-gray-200 dark:border-neutral-800 p-2 flex justify-center items-center">
+                    <div className="w-full max-w-[728px] h-[50px] md:h-[90px] rounded ad-gradient flex flex-col items-center justify-center relative overflow-hidden">
+                        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest z-10">Publicité (Google Ads)</span>
+                        {/* Here you would insert your Google Adsense script */}
+                        {/* <ins className="adsbygoogle" ... ></ins> */}
+                    </div>
+                </div>
+            );
+        };
+
+        // --- PREMIUM MODAL ---
+        const PremiumModal = ({ onClose, onUpgrade }) => (
+            <div className="fixed inset-0 z-[80] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+                <div className="bg-white dark:bg-[#1C1C1E] w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl relative">
+                    <button onClick={onClose} className="absolute top-4 right-4 p-2 bg-gray-100 dark:bg-neutral-800 rounded-full"><X size={20} /></button>
+                    <div className="h-32 bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+                        <Crown size={48} className="text-white fill-yellow-400 stroke-yellow-400 animate-pulse-fast" />
+                    </div>
+                    <div className="p-8 text-center space-y-4">
+                        <h2 className="text-2xl font-bold dark:text-white">Passez Premium</h2>
+                        <p className="text-gray-500 text-sm">Débloquez tout le potentiel de votre Fujifilm X-S20.</p>
+
+                        <ul className="text-left space-y-3 py-4">
+                            <li className="flex gap-3 text-sm dark:text-gray-200"><Check className="text-fuji-accent" /> Recherche IA illimitée</li>
+                            <li className="flex gap-3 text-sm dark:text-gray-200"><Check className="text-fuji-accent" /> Moteur de tendances débloqué</li>
+                            <li className="flex gap-3 text-sm dark:text-gray-200"><Check className="text-fuji-accent" /> Synchronisation Cloud prioritaire</li>
+                            <li className="flex gap-3 text-sm dark:text-gray-200"><Check className="text-fuji-accent" /> Suppression des publicités</li>
+                        </ul>
+
+                        <button onClick={onUpgrade} className="w-full py-3 bg-black dark:bg-white text-white dark:text-black rounded-xl font-bold shadow-lg hover:scale-105 transition-transform flex items-center justify-center gap-2">
+                            Devenir Pro (Simulation)
+                        </button>
+                        <p className="text-[10px] text-gray-400">Paiement sécurisé via Stripe (Demo)</p>
+                    </div>
+                </div>
+            </div>
+        );
+
+        // --- SKELETON LOADER ---
+        const SkeletonCard = () => (
+            <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl border border-gray-200 dark:border-neutral-800 p-4 h-[180px] animate-pulse">
+                <div className="h-1.5 w-1/3 bg-gray-200 dark:bg-neutral-800 rounded mb-4"></div>
+                <div className="h-4 w-3/4 bg-gray-200 dark:bg-neutral-800 rounded mb-2"></div>
+                <div className="h-3 w-1/2 bg-gray-200 dark:bg-neutral-800 rounded mb-6"></div>
+                <div className="flex gap-2 mt-auto">
+                    <div className="h-5 w-12 bg-gray-200 dark:bg-neutral-800 rounded"></div>
+                    <div className="h-5 w-12 bg-gray-200 dark:bg-neutral-800 rounded"></div>
+                </div>
+            </div>
+        );
+
+        // --- RECIPE CARD ---
+        const RecipeCard = ({ recipe, onClick, onAction }) => {
+            const getSimGradient = (sim) => {
+                const s = (sim || '').toLowerCase();
+                if (s.includes('chrome')) return 'from-amber-600 to-cyan-800';
+                if (s.includes('velvia')) return 'from-purple-500 to-pink-600';
+                if (s.includes('acros') || s.includes('mono')) return 'from-gray-400 to-gray-700';
+                if (s.includes('neg')) return 'from-red-700 to-orange-800';
+                return 'from-blue-600 to-teal-600';
+            };
+
+            return (
+                <div onClick={() => onClick(recipe)} className="group bg-white dark:bg-[#1C1C1E] rounded-2xl border border-gray-200 dark:border-neutral-800 hover:border-fuji-accent/50 dark:hover:border-fuji-accent/50 transition-all duration-300 shadow-sm hover:shadow-xl relative overflow-hidden cursor-pointer active:scale-[0.98]">
+                    <div className={`h-1.5 w-full bg-gradient-to-r ${getSimGradient(recipe.baseSimulation)} opacity-80`}></div>
+                    <div className="p-5 flex flex-col h-full">
+                        <div className="flex justify-between items-start mb-2">
+                            <div>
+                                <div className="flex items-center gap-1.5 mb-1">
+                                    <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md ${recipe.type === 'B&W' ? 'bg-gray-100 dark:bg-neutral-800 text-gray-600 dark:text-gray-300' : 'bg-fuji-accent/10 text-emerald-700 dark:text-fuji-accent'}`}>{recipe.type}</span>
+                                    {recipe.cameraSlot && <span className="text-[9px] font-bold bg-black text-white px-1.5 py-0.5 rounded-md">C{recipe.cameraSlot}</span>}
+                                </div>
+                                <h3 className="font-bold text-gray-900 dark:text-white leading-tight line-clamp-1">{recipe.name}</h3>
+                            </div>
+                            <button onClick={(e) => { e.stopPropagation(); onAction('fav', recipe) }} className={`p-1.5 rounded-full ${recipe.isFavorite ? 'text-red-500 bg-red-50 dark:bg-red-900/20' : 'text-gray-300 dark:text-neutral-600 hover:bg-gray-100 dark:hover:bg-neutral-800'}`}><Heart size={16} fill={recipe.isFavorite ? "currentColor" : "none"} /></button>
+                        </div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400 font-mono mb-4 truncate">{recipe.baseSimulation}</div>
+
+                        <div className="grid grid-cols-3 gap-2 py-3 border-t border-gray-100 dark:border-neutral-800/50 mt-auto">
+                            <div className="text-center"><div className="text-[9px] text-gray-400 uppercase">ISO</div><div className="text-[10px] font-mono font-bold dark:text-gray-200">{(recipe.iso || 'Auto').split(' ')[0]}</div></div>
+                            <div className="text-center border-l border-gray-100 dark:border-neutral-800/50"><div className="text-[9px] text-gray-400 uppercase">WB</div><div className="text-[10px] font-mono font-bold dark:text-gray-200 truncate px-1">{recipe.whiteBalance}</div></div>
+                            <div className="text-center border-l border-gray-100 dark:border-neutral-800/50"><div className="text-[9px] text-gray-400 uppercase">GRN</div><div className="text-[10px] font-mono font-bold dark:text-gray-200">{recipe.grainRoughness === 'Off' ? 'OFF' : 'ON'}</div></div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- DETAIL SHEET ---
+        const DetailSheet = ({ recipe, onClose, onEdit }) => {
+            const [animating, setAnimating] = useState(false);
+            const handleClose = () => { setAnimating(true); setTimeout(onClose, 300); };
+
+            const Gauge = ({ label, value }) => {
+                const val = value || 0;
+                const pct = (Math.abs(val) / 4) * 50;
+                return (
+                    <div>
+                        <div className="flex justify-between text-[10px] uppercase text-gray-500 font-bold mb-1"><span>{label}</span><span className={val > 0 ? 'text-fuji-accent' : val < 0 ? 'text-red-500' : ''}>{val > 0 ? '+' + val : val}</span></div>
+                        <div className="h-1 bg-gray-200 dark:bg-neutral-800 rounded-full relative overflow-hidden">
+                            <div className="absolute left-1/2 w-px h-full bg-gray-400 z-10"></div>
+                            <div className={`absolute h-full transition-all ${val >= 0 ? 'bg-fuji-accent left-1/2' : 'bg-red-500 right-1/2'}`} style={{ width: `${pct}%` }}></div>
+                        </div>
+                    </div>
+                );
+            };
+
+            return (
+                <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center">
+                    <div className={`absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${animating ? 'opacity-0' : 'opacity-100'}`} onClick={handleClose}></div>
+                    <div className={`w-full md:max-w-2xl bg-white dark:bg-[#1C1C1E] rounded-t-3xl md:rounded-2xl h-[90vh] md:h-auto overflow-hidden flex flex-col transform transition-transform duration-300 ${animating ? 'translate-y-full md:translate-y-10 opacity-0' : 'translate-y-0'} animate-spring-up`}>
+                        <div className="md:hidden flex justify-center pt-3 pb-1" onClick={handleClose}><div className="w-12 h-1.5 bg-gray-300 dark:bg-neutral-700 rounded-full"></div></div>
+                        <div className="p-6 border-b border-gray-100 dark:border-neutral-800 flex justify-between items-start relative overflow-hidden">
+                            <div className={`absolute top-0 left-0 w-1 h-full bg-gradient-to-b ${recipe.type === 'Color' ? 'from-indigo-500 to-purple-500' : 'from-gray-400 to-gray-600'}`}></div>
+                            <div className="pl-4">
+                                <span className="text-xs font-mono text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 px-2 py-0.5 rounded">{recipe.baseSimulation}</span>
+                                <h2 className="text-3xl font-bold mt-2 dark:text-white leading-none">{recipe.name}</h2>
+                            </div>
+                            <button onClick={handleClose} className="bg-gray-100 dark:bg-neutral-800 p-2 rounded-full"><X size={20} className="dark:text-white" /></button>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
+                            {/* Highlight Data */}
+                            <div className="grid grid-cols-4 gap-3">
+                                {[['DR', recipe.dynamicRange], ['ISO', (recipe.iso || '').split(' ')[0]], ['GRAIN', recipe.grainRoughness], ['CLAR', recipe.clarity]].map(([l, v], i) => (
+                                    <div key={i} className="bg-gray-50 dark:bg-neutral-900 p-2 rounded-xl text-center border border-gray-100 dark:border-neutral-800">
+                                        <div className="text-[9px] text-gray-400 uppercase font-bold">{l}</div>
+                                        <div className="text-sm font-mono font-bold dark:text-white truncate">{v === 'Off' ? 'OFF' : v}</div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="grid md:grid-cols-2 gap-8">
+                                <div className="space-y-4">
+                                    <h3 className="text-xs font-bold text-gray-400 uppercase flex items-center gap-2"><Aperture size={14} /> Tone Curve</h3>
+                                    <Gauge label="Highlights" value={recipe.highlight} />
+                                    <Gauge label="Shadows" value={recipe.shadow} />
+                                    <Gauge label="Sharpness" value={recipe.sharpening} />
+                                    <Gauge label="Noise Red." value={recipe.noiseReduction} />
+                                </div>
+                                <div className="space-y-4">
+                                    <h3 className="text-xs font-bold text-gray-400 uppercase flex items-center gap-2"><Palette size={14} /> Color & WB</h3>
+                                    <Gauge label="Color" value={recipe.color} />
+                                    <div className="bg-gray-50 dark:bg-neutral-900 p-3 rounded-xl border border-gray-100 dark:border-neutral-800">
+                                        <div className="flex justify-between text-xs mb-2"><span className="text-gray-500 uppercase">WB Mode</span><span className="font-mono font-bold dark:text-white">{recipe.whiteBalance}</span></div>
+                                        <div className="relative aspect-[2/1] bg-white dark:bg-black rounded border border-gray-200 dark:border-neutral-800">
+                                            <div className="absolute inset-0 grid grid-cols-2 grid-rows-2 divide-x divide-y divide-gray-100 dark:divide-neutral-800"><div></div><div></div><div></div><div></div></div>
+                                            <div className="absolute w-3 h-3 bg-fuji-accent rounded-full shadow-lg transform -translate-x-1/2 -translate-y-1/2 border-2 border-white dark:border-black" style={{ left: `${50 + (recipe.whiteBalanceShiftB || 0) * 5}%`, top: `${50 - (recipe.whiteBalanceShiftR || 0) * 10}%` }}></div>
+                                        </div>
+                                        <div className="flex justify-between mt-1 text-[10px] font-mono text-gray-400"><span>R: {recipe.whiteBalanceShiftR}</span><span>B: {recipe.whiteBalanceShiftB}</span></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {recipe.notes && <div className="p-4 bg-fuji-paper dark:bg-neutral-900 rounded-xl text-sm italic text-gray-600 dark:text-gray-400">"{recipe.notes}"</div>}
+                            <div className="flex flex-wrap gap-2">{recipe.tags?.map(t => <span key={t} className="px-2 py-1 bg-gray-100 dark:bg-neutral-800 rounded text-xs text-gray-500">#{t}</span>)}</div>
+                        </div>
+
+                        <div className="p-4 border-t border-gray-100 dark:border-neutral-800 flex gap-3 pb-safe bg-white dark:bg-[#1C1C1E]">
+                            <button onClick={() => { handleClose(); setTimeout(() => onEdit(recipe), 300); }} className="flex-1 bg-black dark:bg-white text-white dark:text-black py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:opacity-90 transition"><Edit2 size={18} /> Modifier</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- SETTINGS / ACCOUNT ---
+        const SettingsSheet = ({ onClose, user, onLogin, onLogout, onConfig, savedConfig, isPremium, onPremium }) => {
+            const [tab, setTab] = useState(user ? 'account' : 'config');
+            const [json, setJson] = useState(savedConfig ? JSON.stringify(savedConfig, null, 2) : '');
+            const [email, setEmail] = useState(''); const [pass, setPass] = useState('');
+            const [apiKey, setApiKey] = useState(localStorage.getItem('fuji_gemini_key') || '');
+            const toast = useToast();
+
+            const saveCfg = () => {
+                try {
+                    const c = JSON.parse(json);
+                    if (initFirebase(c)) { onConfig(c); toast("Firebase connecté !"); }
+                    else toast("Erreur config Firebase", "error");
+                } catch { toast("JSON Invalide", "error"); }
+                if (apiKey) { localStorage.setItem('fuji_gemini_key', apiKey); toast("Clé IA sauvegardée"); }
+            };
+
+            const handleEmailAuth = async (isUp) => {
+                if (!email || !pass) { toast("Veuillez remplir tous les champs", "error"); return; }
+                onLogin(email, pass);
+            };
+
+            const handleGoogleLogin = async () => {
+                onLogin('google@user.com', 'google');
+            };
+
+            return (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+                    <div className="bg-white dark:bg-[#1C1C1E] w-full max-w-md rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[80vh]">
+                        <div className="p-4 border-b border-gray-100 dark:border-neutral-800 flex justify-between"><h2 className="font-bold dark:text-white flex gap-2"><Settings className="text-gray-400" /> Paramètres</h2><button onClick={onClose}><X size={20} className="dark:text-white" /></button></div>
+                        <div className="p-6 overflow-y-auto custom-scrollbar">
+                            {user ? (
+                                <div className="text-center space-y-4">
+                                    <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full mx-auto flex items-center justify-center text-2xl text-white font-bold">{user.email ? user.email[0].toUpperCase() : 'G'}</div>
+                                    <div><div className="font-bold dark:text-white">Connecté</div><div className="text-xs text-gray-500">{user.email}</div></div>
+
+                                    {!isPremium && (
+                                        <button onClick={onPremium} className="w-full py-3 bg-gradient-to-r from-yellow-400 to-orange-500 text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20">
+                                            <Crown size={18} /> Passer Premium
+                                        </button>
+                                    )}
+
+                                    <button onClick={handleLogout} className="text-red-500 text-sm font-bold border border-red-200 px-4 py-2 rounded-lg hover:bg-red-50">Déconnexion</button>
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    <button onClick={handleGoogleLogin} className="w-full bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-700 text-gray-700 dark:text-white font-bold py-2.5 rounded flex items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-neutral-700 transition">
+                                        <svg className="w-4 h-4" viewBox="0 0 24 24"><path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" /><path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" /><path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.84z" /><path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" /></svg>
+                                        Continuer avec Google
+                                    </button>
+
+                                    <div className="flex items-center gap-2 my-2"><div className="h-px bg-gray-200 dark:bg-neutral-800 flex-1"></div><span className="text-xs text-gray-400">OU</span><div className="h-px bg-gray-200 dark:bg-neutral-800 flex-1"></div></div>
+
+                                    <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} className="w-full p-3 bg-gray-50 dark:bg-neutral-900 border border-gray-200 dark:border-neutral-800 rounded dark:text-white" />
+                                    <input type="password" placeholder="Mot de passe" value={pass} onChange={e => setPass(e.target.value)} className="w-full p-3 bg-gray-50 dark:bg-neutral-900 border border-gray-200 dark:border-neutral-800 rounded dark:text-white" />
+                                    <div className="flex gap-2">
+                                        <button onClick={() => handleEmailAuth(false)} className="flex-1 bg-indigo-600 text-white font-bold py-2 rounded hover:bg-indigo-700">Connexion</button>
+                                        <button onClick={() => handleEmailAuth(true)} className="flex-1 border border-gray-300 dark:border-neutral-700 dark:text-white font-bold py-2 rounded hover:bg-gray-50 dark:hover:bg-neutral-800">Créer compte</button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- MAIN APP ---
+        const App = () => {
+            const [recipes, setRecipes] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [view, setView] = useState('grid');
+            const [selected, setSelected] = useState(null);
+            const [filter, setFilter] = useState('all');
+            const [search, setSearch] = useState('');
+            const [showAI, setShowAI] = useState(false);
+            const [showSettings, setShowSettings] = useState(false); // Fixed: Added missing showSettings state
+            const [showPremium, setShowPremium] = useState(false);
+            const [aiContext, setAiContext] = useState('');
+            const [aiRes, setAiRes] = useState('');
+            const [isImporting, setIsImporting] = useState(false);
+            const [isPremium, setIsPremium] = useState(false);
+            const [credits, setCredits] = useState(5);
+            const [user, setUser] = useState(null); // Fixed: Added missing user state
+            const toast = useToast();
+
+            // Auth State Observer
+            useEffect(() => {
+                if (!auth) return;
+                const unsubscribe = onAuthStateChanged(auth, async (u) => {
+                    if (u) {
+                        setUser(u);
+                        // Fetch user data from Firestore
+                        if (db) {
+                            const docRef = doc(db, "users", u.uid);
+                            const docSnap = await getDoc(docRef);
+                            if (docSnap.exists()) {
+                                const data = docSnap.data();
+                                setIsPremium(data.isPremium || false);
+                                if (data.credits) setCredits(data.credits.count);
+                            }
+                        }
+                    } else {
+                        setUser(null);
+                        setIsPremium(false);
+                        setCredits(5);
+                    }
+                });
+                return () => unsubscribe();
+            }, []);
+
+            // Real-time credits update
+            useEffect(() => {
+                if (!user || !db) return;
+                const unsub = onSnapshot(doc(db, "users", user.uid), (doc) => {
+                    if (doc.exists()) {
+                        const data = doc.data();
+                        setIsPremium(data.isPremium || false);
+                        if (data.credits) setCredits(data.credits.count);
+                    }
+                });
+                return () => unsub();
+            }, [user]);
+
+            // Init Data
+            useEffect(() => {
+                const local = JSON.parse(localStorage.getItem('fuji_data') || 'null');
+                const premiumStatus = localStorage.getItem('isPremium') === 'true';
+
+                if (local) setRecipes(local);
+                else setRecipes(INITIAL_RECIPES);
+
+                setIsPremium(premiumStatus);
+                setLoading(false);
+            }, []);
+
+            // Save Data
+            useEffect(() => {
+                if (!loading) {
+                    localStorage.setItem('fuji_data', JSON.stringify(recipes));
+                }
+            }, [recipes, loading]);
+
+            // Actions
+            const toggleFav = (r) => setRecipes(p => p.map(x => x.id === r.id ? { ...x, isFavorite: !x.isFavorite } : x));
+            const deleteRecipe = (id) => { if (confirm("Supprimer ?")) setRecipes(p => p.filter(x => x.id !== id)); setSelected(null); };
+
+            const handleImportWeb = async (query, type) => {
+                setIsImporting(true);
+                try {
+                    toast(type === 'trending' ? "Recherche des tendances..." : "Recherche sur le web...", "info");
+
+                    const res = type === 'trending' ? await getTrendingRecipes() : await searchFujiRecipes(query);
+
+                    if (res && res.length > 0) {
+                        const mapped = res.map(r => ({
+                            ...r,
+                            id: Date.now() + Math.random().toString(),
+                            isFavorite: false,
+                            cameraSlot: null,
+                            highlight: r.highlight || 0,
+                            shadow: r.shadow || 0,
+                            color: r.color || 0,
+                            noiseReduction: r.noiseReduction || 0,
+                            sharpening: r.sharpening || 0,
+                            clarity: r.clarity || 0,
+                            grainRoughness: r.grainRoughness || 'Off',
+                            grainSize: r.grainSize || 'Small',
+                            tags: r.tags || ['Importé']
+                        }));
+                        setRecipes(p => [...mapped, ...p]);
+                        toast(`${mapped.length} recettes ajoutées !`);
+                        setShowAI(false);
+                    } else {
+                        toast("Aucune recette trouvée ou format invalide", "error");
+                    }
+                } catch (e) {
+                    console.error(e);
+                    if (e.message.includes('Limite quotidienne')) {
+                        toast("Limite atteinte ! Passez Premium.", "error");
+                        setShowPremium(true);
+                    } else {
+                        toast("Erreur lors de la recherche IA", "error");
+                    }
+                } finally {
+                    setIsImporting(false);
+                }
+            };
+
+            const handleAdvice = async () => {
+                if (!aiContext) return;
+
+                // Optimistic check (real check is on server)
+                if (!isPremium && credits <= 0) {
+                    toast("Limite atteinte ! Passez Premium.", "error");
+                    setShowPremium(true);
+                    return;
+                }
+
+                setAiRes("Analyse de vos recettes...");
+                try {
+                    const res = await suggestRecipeFromContext(aiContext, recipes);
+                    setAiRes(res);
+                } catch (e) {
+                    console.error(e);
+                    if (e.message.includes('Limite quotidienne')) {
+                        toast("Limite atteinte ! Passez Premium.", "error");
+                        setShowPremium(true);
+                    } else {
+                        toast("Erreur lors de l'analyse", "error");
+                    }
+                }
+            };
+
+            // --- PREMIUM & AUTH ACTIONS ---
+            const upgradeToPremium = async () => {
+                const btn = document.activeElement;
+                if (btn) btn.innerHTML = '<span class="animate-spin">⌛</span> Redirection...';
+
+                try {
+                    const { url } = await createStripeSession(window.location.href);
+                    window.location.href = url;
+                } catch (e) {
+                    console.error(e);
+                    toast("Erreur lors de la création de la session de paiement", "error");
+                    if (btn) btn.innerHTML = 'Réessayer';
+                }
+            };
+
+            const handleLogin = async (email, pass) => {
+                try {
+                    if (pass === 'google') {
+                        await signInWithPopup(auth, new GoogleAuthProvider());
+                    } else {
+                        await signInWithEmailAndPassword(auth, email, pass);
+                    }
+                    toast("Connexion réussie !");
+                    setShowSettings(false);
+                } catch (e) {
+                    console.error(e);
+                    // If user not found, try to create account
+                    if (e.code === 'auth/user-not-found' || e.code === 'auth/invalid-credential') {
+                        try {
+                            await createUserWithEmailAndPassword(auth, email, pass);
+                            toast("Compte créé avec succès !");
+                            setShowSettings(false);
+                        } catch (createErr) {
+                            toast("Erreur: " + createErr.message, "error");
+                        }
+                    } else {
+                        toast("Erreur: " + e.message, "error");
+                    }
+                }
+            };
+
+            const handleLogout = async () => {
+                await signOut(auth);
+                toast("Déconnecté");
+                setShowSettings(false);
+            };
+
+            const filtered = recipes.filter(r => {
+                const mText = r.name.toLowerCase().includes(search.toLowerCase());
+                if (filter === 'fav') return mText && r.isFavorite;
+                if (filter === 'cam') return mText && r.cameraSlot;
+                return mText;
+            });
+
+            // Editor Component
+            const Editor = ({ initial, onSave, onCancel }) => {
+                const [data, setData] = useState(initial || { id: Date.now().toString(), name: '', type: 'Color', baseSimulation: 'PROVIA/Standard', dynamicRange: 'DR100', highlight: 0, shadow: 0, color: 0, noiseReduction: 0, sharpening: 0, clarity: 0, grainRoughness: 'Off', grainSize: 'Small', whiteBalance: 'Auto', whiteBalanceShiftR: 0, whiteBalanceShiftB: 0, iso: 'Auto', tags: [], notes: '', isFavorite: false });
+                return (
+                    <div className="fixed inset-0 z-[70] bg-white dark:bg-[#121212] flex flex-col animate-slide-in">
+                        <div className="p-4 border-b dark:border-neutral-800 flex justify-between items-center bg-white dark:bg-[#161616]">
+                            <button onClick={onCancel} className="text-gray-500">Annuler</button>
+                            <h2 className="font-bold dark:text-white">{initial ? 'Modifier' : 'Nouvelle'}</h2>
+                            <button onClick={() => onSave(data)} className="text-indigo-600 font-bold">Enregistrer</button>
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar pb-20">
+                            <div className="space-y-4">
+                                <div><label className="text-xs font-bold text-gray-400 uppercase">Nom</label><input className="w-full p-3 bg-gray-50 dark:bg-neutral-900 rounded-lg dark:text-white border-none" value={data.name} onChange={e => setData({ ...data, name: e.target.value })} placeholder="Nom de la recette" /></div>
+                                <div><label className="text-xs font-bold text-gray-400 uppercase">Simulation</label><select className="w-full p-3 bg-gray-50 dark:bg-neutral-900 rounded-lg dark:text-white" value={data.baseSimulation} onChange={e => setData({ ...data, baseSimulation: e.target.value })}>{Object.values(FilmSimulation).map(s => <option key={s} value={s}>{s}</option>)}</select></div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    {['highlight', 'shadow', 'color', 'sharpening', 'noiseReduction', 'clarity'].map(f => (
+                                        <div key={f}><label className="text-xs font-bold text-gray-400 uppercase">{f}</label><input type="number" className="w-full p-3 bg-gray-50 dark:bg-neutral-900 rounded-lg dark:text-white text-center" value={data[f]} onChange={e => setData({ ...data, [f]: Number(e.target.value) })} /></div>
+                                    ))}
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div><label className="text-xs font-bold text-gray-400 uppercase">Grain Rough</label><select className="w-full p-3 bg-gray-50 dark:bg-neutral-900 rounded-lg dark:text-white" value={data.grainRoughness} onChange={e => setData({ ...data, grainRoughness: e.target.value })}>
+                                        <option>Off</option><option>Weak</option><option>Strong</option>
+                                    </select></div>
+                                    <div><label className="text-xs font-bold text-gray-400 uppercase">Grain Size</label><select className="w-full p-3 bg-gray-50 dark:bg-neutral-900 rounded-lg dark:text-white" value={data.grainSize} onChange={e => setData({ ...data, grainSize: e.target.value })}>
+                                        <option>Small</option><option>Large</option>
+                                    </select></div>
+                                </div>
+                                <div><label className="text-xs font-bold text-gray-400 uppercase">Notes</label><textarea className="w-full p-3 bg-gray-50 dark:bg-neutral-900 rounded-lg dark:text-white h-24" value={data.notes} onChange={e => setData({ ...data, notes: e.target.value })} /></div>
+                                {initial && <button onClick={() => deleteRecipe(data.id)} className="w-full text-red-500 py-3 border border-red-500 rounded-lg font-bold">Supprimer la recette</button>}
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            return (
+                <div className="flex h-screen overflow-hidden">
+                    {/* Desktop Sidebar */}
+                    <aside className="hidden lg:flex flex-col w-72 border-r border-gray-200 dark:border-neutral-800 bg-white dark:bg-black p-6 space-y-6">
+                        <div className="flex items-center gap-3"><div className="w-8 h-8 bg-black dark:bg-white rounded flex items-center justify-center text-white dark:text-black font-bold">F</div><span className="font-bold text-xl dark:text-white tracking-tight">FUJIRECIPES</span></div>
+
+                        {!isPremium && (
+                            <div onClick={() => setShowPremium(true)} className="bg-gradient-to-r from-indigo-500 to-purple-600 p-4 rounded-xl text-white cursor-pointer hover:scale-105 transition-transform">
+                                <div className="flex items-center gap-2 font-bold mb-1"><Crown size={16} /> Go Premium</div>
+                                <div className="text-[10px] opacity-90">Supprimez les pubs & IA illimitée.</div>
+                            </div>
+                        )}
+
+                        <div className="space-y-2">
+                            {[{ id: 'all', l: 'Bibliothèque', i: Grid }, { id: 'fav', l: 'Favoris', i: Heart }, { id: 'cam', l: 'Slots Caméra', i: Camera }].map(x => (
+                                <button key={x.id} onClick={() => setFilter(x.id)} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition ${filter === x.id ? 'bg-gray-100 dark:bg-neutral-900 text-black dark:text-white' : 'text-gray-500 hover:text-black dark:hover:text-white'}`}><x.i size={18} /> {x.l}</button>
+                            ))}
+                        </div>
+                        <div className="mt-auto pt-6 border-t border-gray-100 dark:border-neutral-900">
+                            <button onClick={() => setShowSettings(true)} className="flex items-center gap-3 text-sm text-gray-500 hover:text-black dark:hover:text-white transition"><User size={18} /> {user ? (user.email || 'Compte') : 'Connexion'}</button>
+                        </div>
+                    </aside>
+
+                    {/* Main Content */}
+                    <div className="flex-1 flex flex-col relative bg-fuji-paper dark:bg-black transition-colors">
+                        {/* Header */}
+                        <header className="h-16 border-b border-gray-200 dark:border-neutral-900 flex items-center justify-between px-4 md:px-8 bg-white/80 dark:bg-black/80 backdrop-blur sticky top-0 z-20">
+                            <div className="lg:hidden font-bold dark:text-white">FUJI</div>
+                            <div className="flex-1 max-w-md mx-4 relative">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                                <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher..." className="w-full bg-gray-100 dark:bg-[#1C1C1E] rounded-full py-2 pl-10 pr-4 text-sm dark:text-white focus:outline-none focus:ring-2 ring-indigo-500/50" />
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button onClick={() => setShowAI(true)} className="hidden md:flex items-center gap-2 bg-indigo-50 dark:bg-indigo-900/20 px-3 py-1.5 rounded-full text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition">
+                                    <Sparkles size={16} />
+                                    <span className="text-xs font-bold">{isPremium ? 'ILLIMITÉ' : `${credits} crédits`}</span>
+                                </button>
+                                <button onClick={() => setShowAI(true)} className="md:hidden p-2 text-indigo-600 dark:text-indigo-400"><Sparkles size={24} /></button>
+                                <button onClick={() => setShowSettings(true)} className="md:hidden p-2 text-gray-600 dark:text-gray-400"><Settings size={24} /></button>
+                                <button onClick={() => setView('form')} className="hidden md:flex bg-black dark:bg-white text-white dark:text-black px-4 py-2 rounded-full font-bold text-sm items-center gap-2"><Plus size={16} /> Créer</button>
+                            </div>
+                        </header>
+
+                        {/* Body */}
+                        <main className="flex-1 overflow-y-auto p-4 md:p-8 pb-32 md:pb-8">
+                            {loading ? (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">{[1, 2, 3].map(i => <SkeletonCard key={i} />)}</div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+                                    {filtered.map(r => (
+                                        <div key={r.id} className="animate-fade-in">
+                                            <RecipeCard recipe={r} onClick={() => setSelected(r)} onAction={(t, r) => toggleFav(r)} />
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                            {!loading && filtered.length === 0 && <div className="text-center py-20 text-gray-400">Aucune recette trouvée.</div>}
+                        </main>
+
+                        {/* Ads Banner */}
+                        <div className="absolute bottom-16 md:bottom-0 w-full z-10">
+                            <AdBanner isPremium={isPremium} />
+                        </div>
+
+                        {/* FAB */}
+                        <button onClick={() => setView('form')} className="md:hidden fixed bottom-32 right-4 w-14 h-14 bg-black dark:bg-white text-white dark:text-black rounded-full shadow-2xl flex items-center justify-center z-40 active:scale-90 transition"><Plus size={28} /></button>
+
+                        {/* Mobile Nav */}
+                        <nav className="lg:hidden fixed bottom-0 w-full bg-white/90 dark:bg-[#1C1C1E]/90 backdrop-blur border-t border-gray-200 dark:border-neutral-800 flex justify-around p-2 pb-safe z-30">
+                            {[{ id: 'all', i: Home, l: 'Home' }, { id: 'fav', i: Heart, l: 'Favs' }, { id: 'cam', i: Camera, l: 'C1-C4' }].map(x => (
+                                <button key={x.id} onClick={() => setFilter(x.id)} className={`flex flex-col items-center p-2 rounded-xl w-16 ${filter === x.id ? 'text-black dark:text-white' : 'text-gray-400'}`}><x.i size={20} /><span className="text-[10px] font-medium mt-1">{x.l}</span></button>
+                            ))}
+                        </nav>
+                    </div>
+
+                    {/* Overlays */}
+                    {selected && <DetailSheet recipe={selected} onClose={() => setSelected(null)} onEdit={(r) => { setSelected(null); setView('form'); }} />}
+                    {view === 'form' && <Editor initial={null} onSave={(r) => { setRecipes([r, ...recipes]); setView('grid'); }} onCancel={() => setView('grid')} />}
+                    {showSettings && <SettingsSheet onClose={() => setShowSettings(false)} user={user} onConfig={(c) => localStorage.setItem('fuji_firebase_config', JSON.stringify(c))} savedConfig={JSON.parse(localStorage.getItem('fuji_firebase_config') || 'null')} onLogin={handleLogin} onLogout={() => setUser(null)} isPremium={isPremium} onPremium={() => { setShowSettings(false); setShowPremium(true); }} />}
+                    {showPremium && <PremiumModal onClose={() => setShowPremium(false)} onUpgrade={upgradeToPremium} />}
+
+                    {/* AI Overlay */}
+                    {showAI && (
+                        <div className="fixed inset-0 z-[60] bg-white dark:bg-[#1C1C1E] flex flex-col animate-slide-in">
+                            <div className="p-4 border-b dark:border-neutral-800 flex items-center gap-3"><button onClick={() => setShowAI(false)}><X /></button><h2 className="font-bold flex items-center gap-2 text-indigo-600"><Sparkles size={18} /> Assistant Fuji X-S20</h2></div>
+                            <div className="bg-indigo-50 dark:bg-indigo-900/10 px-4 py-2 flex justify-between items-center text-xs">
+                                <span className="font-bold text-indigo-800 dark:text-indigo-300">
+                                    {isPremium ? '💎 Mode Premium Actif' : `⚡ ${credits} crédits restants aujourd'hui`}
+                                </span>
+                                {!isPremium && <button onClick={() => setShowPremium(true)} className="underline text-indigo-600 dark:text-indigo-400">Augmenter</button>}
+                            </div>
+                            <div className="p-6 space-y-8 flex-1 overflow-y-auto">
+                                <div className="space-y-4">
+                                    <h3 className="font-bold uppercase text-xs text-gray-400">Importer depuis Internet</h3>
+                                    <div className="flex gap-2">
+                                        <input className="flex-1 bg-gray-100 dark:bg-neutral-900 p-3 rounded-lg dark:text-white" placeholder="Nom d'une recette ou style..." id="ai-search" onKeyDown={(e) => e.key === 'Enter' && handleImportWeb(e.target.value, 'search')} />
+                                        <button onClick={() => handleImportWeb(document.getElementById('ai-search').value, 'search')} disabled={isImporting} className="bg-black dark:bg-white text-white dark:text-black px-4 rounded-lg font-bold disabled:opacity-50">
+                                            {isImporting ? <Loader2 className="animate-spin" /> : <Search size={18} />}
+                                        </button>
+                                    </div>
+                                    <button onClick={() => handleImportWeb('', 'trending')} disabled={isImporting} className="w-full py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20 active:scale-95 transition">
+                                        {isImporting ? <Loader2 className="animate-spin" /> : <Flame size={18} />}
+                                        Importer les Top 5 Recettes 2025
+                                    </button>
+                                </div>
+
+                                <div className="space-y-3 pt-6 border-t dark:border-neutral-800">
+                                    <h3 className="font-bold uppercase text-xs text-gray-400">Conseiller IA</h3>
+                                    <div className="relative">
+                                        <textarea value={aiContext} onChange={e => setAiContext(e.target.value)} className="w-full bg-gray-100 dark:bg-neutral-900 p-3 rounded-lg h-24 dark:text-white border-none focus:ring-2 ring-indigo-500/50" placeholder="Ex: Je suis à Tokyo sous la pluie la nuit, néons partout..." />
+                                        <div className="absolute bottom-2 right-2 flex gap-1">
+                                            {['Nuit', 'Portrait', 'Rue', 'Nature'].map(t => <span key={t} onClick={() => setAiContext(t)} className="text-[10px] px-2 py-1 bg-white dark:bg-black rounded-full cursor-pointer border border-gray-200 dark:border-neutral-700 shadow-sm">{t}</span>)}
+                                        </div>
+                                    </div>
+                                    <button onClick={handleAdvice} className="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2">
+                                        <Zap size={18} className="fill-current" /> Analyser mes recettes
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+        const root = createRoot(document.getElementById('root'));
+        root.render(
+            <ToastProvider>
+                <App />
+            </ToastProvider>
+        );
+    </script>
+</body>
+
+</html>

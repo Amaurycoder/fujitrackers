@@ -1,0 +1,5 @@
+{
+  "name": "FujiFilm Recipe Tracker",
+  "description": "Une application de gestion de recettes Fujifilm pour suivre vos réglages favoris, gérer vos slots C1-C7 et obtenir des recommandations IA basées sur vos conditions de prise de vue.",
+  "requestFramePermissions": []
+}
